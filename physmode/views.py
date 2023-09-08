@@ -18,6 +18,13 @@ def switch(request):
 
 @require_POST
 @csrf_exempt
+def toggle(request):
+    mp.toggle()
+    return HttpResponse("OK")
+
+
+@require_POST
+@csrf_exempt
 def set_params(request):
     data = json.loads(request.body)
 

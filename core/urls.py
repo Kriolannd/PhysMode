@@ -23,6 +23,7 @@ from physmode import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('switch/', views.switch),
+    path('toggle/', views.toggle),
     path('params/', views.set_params),
     path('events/', include(django_eventstream.urls), {'channels': ['test']}),
 ]

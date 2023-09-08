@@ -1,3 +1,4 @@
+import time
 from threading import Thread
 
 from physmode.modelling.distortion import Distortion
@@ -19,6 +20,7 @@ class ModellingProcess(Thread):
         self.apparent_state = True
 
         self.callbacks = []
+        self.paused = True
 
     def set_trefr(self, trefr):
         if trefr:
@@ -40,8 +42,13 @@ class ModellingProcess(Thread):
     def add_callback(self, callback):
         self.callbacks.append(callback)
 
+    def toggle(self):
+        self.paused = not self.paused
+
     def run(self):
         for phys_calcs in self.solver.generate_calculations():
+            while self.paused: time.sleep(1)
+
             results = {
                 "time": round(phys_calcs[0], 2),
                 "power": round(phys_calcs[2], 2),
