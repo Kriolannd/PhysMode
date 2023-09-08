@@ -11,7 +11,7 @@ class PhysmodeConfig(AppConfig):
     mp = None
 
     def ready(self):
-        self.mp = ModellingProcess.build_from_file("physmode/modelling/F3.txt")
+        self.mp = ModellingProcess.build_from_file("../F3.txt")
 
         def log_values(values):
             with open("physmode/modelling/F4.txt", "a") as log:

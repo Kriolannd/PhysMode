@@ -21,12 +21,12 @@ class ModellingProcess(Thread):
         self.callbacks = []
 
     def set_trefr(self, trefr):
-        if trefr is not None:
-            self.solver.set_trefr(trefr)
+        if trefr:
+            self.solver.set_trefr(float(trefr))
 
     def set_distortion_params(self, sigma, alpha):
-        self.distortion.sigma = sigma if sigma is not None else self.distortion.sigma
-        self.distortion.alpha = alpha if alpha is not None else self.distortion.alpha
+        self.distortion.sigma = float(sigma) if sigma else self.distortion.sigma
+        self.distortion.alpha = float(alpha) if alpha else self.distortion.alpha
 
     def switch(self):
         print(self.apparent_state)
