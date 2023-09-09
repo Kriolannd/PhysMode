@@ -1,26 +1,29 @@
 import time
 from threading import Thread
+from typing import Callable
 
 from physmode.modelling.distortion import Distortion
 from physmode.modelling.solver import Solver
+
 
 # from distortion import Distortion
 # from solver import Solver
 
 
 class ModellingProcess(Thread):
-    def __init__(self, solver: Solver, distortion: Distortion):
+    def __init__(self, solver_builder: Callable[[], Solver], distortion: Distortion):
         super().__init__()
         self.daemon = True
 
         self.distortion = distortion
-        self.solver = solver
+        self.solver_builder = solver_builder
+        self.solver = self.solver_builder()
 
         self.true_state = True
         self.apparent_state = True
+        self.paused = True
 
         self.callbacks = []
-        self.paused = True
 
     def set_trefr(self, trefr):
         if trefr:
@@ -42,26 +45,41 @@ class ModellingProcess(Thread):
     def add_callback(self, callback):
         self.callbacks.append(callback)
 
+    def _restart(self):
+        self.solver = self.solver_builder()
+
+        self.true_state = True
+        self.apparent_state = True
+        self.paused = True
+
     def toggle(self):
         self.paused = not self.paused
 
     def run(self):
-        for phys_calcs in self.solver.generate_calculations():
-            while self.paused: time.sleep(1)
+        while True:
+            try:
+                for phys_calcs in self.solver.generate_calculations():
+                    while self.paused: time.sleep(1)
 
-            results = {
-                "time": round(phys_calcs[0], 2),
-                "power": round(phys_calcs[2], 2),
+                    results = {
+                        "time": round(phys_calcs[0], 2),
+                        "power": round(phys_calcs[2], 2),
 
-                "state": int(self.true_state),
-                "state_apparent": int(self.apparent_state),
+                        "state": int(self.true_state),
+                        "state_apparent": int(self.apparent_state),
 
-                "temp": round(phys_calcs[1], 2),
-                "temp_apparent": round(self.distortion.change_temp(phys_calcs[1]), 2),
-            }
+                        "temp": round(phys_calcs[1], 2),
+                        "temp_apparent": round(self.distortion.change_temp(phys_calcs[1]), 2),
+                    }
 
-            for callback in self.callbacks:
-                callback(results)
+                    for callback in self.callbacks:
+                        callback(results)
+
+            except ValueError:
+                for callback in self.callbacks:
+                    callback({"dead": True})
+
+                self._restart()
 
     @staticmethod
     def build_from_file(f3_path):
@@ -76,9 +94,9 @@ class ModellingProcess(Thread):
             dt_go_max = float(vals[5])
 
         return ModellingProcess(
-            Solver(quant=quant, dt_required=dt_required,
-                   t_max=t_max, t_min=t_min,
-                   dt_go_min=dt_go_min, dt_go_max=dt_go_max),
+            lambda: Solver(quant=quant, dt_required=dt_required,
+                           t_max=t_max, t_min=t_min,
+                           dt_go_min=dt_go_min, dt_go_max=dt_go_max),
             Distortion(sigma=10, alpha=0)
         )
 
